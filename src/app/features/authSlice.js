@@ -9,6 +9,7 @@ export const loginUser = createAsyncThunk(
   async (credentials, { rejectWithValue }) => {
     try {
       const data = await loginAPI(credentials)
+      // v2 returns unwrapped data via apiClient: { token, token_type, user }
       setToken(data.token)
       setUserData(data.user)
       return data

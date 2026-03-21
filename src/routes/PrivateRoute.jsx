@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Navbar from '../components/layout/Navbar'
+import BottomTabBar from '../components/layout/BottomTabBar'
 
 const PrivateRoute = () => {
   const { isAuthenticated } = useSelector((state) => state.auth)
@@ -15,10 +16,11 @@ const PrivateRoute = () => {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
           <Outlet />
         </main>
       </div>
+      <BottomTabBar />
     </div>
   )
 }

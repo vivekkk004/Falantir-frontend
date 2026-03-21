@@ -7,6 +7,7 @@ import Dashboard from '../pages/dashboard/Dashboard'
 import Monitor from '../pages/monitor/Monitor'
 import Alerts from '../pages/alerts/Alerts'
 import Analytics from '../pages/analytics/Analytics'
+import WorkflowBuilder from '../pages/workflow/WorkflowBuilder'
 import Users from '../pages/users/Users'
 import Profile from '../pages/profile/Profile'
 import Settings from '../pages/settings/Settings'
@@ -24,9 +25,11 @@ const AppRoutes = () => {
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/live-feed" element={<Monitor />} />
         <Route path="/monitor" element={<Monitor />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/workflows" element={<WorkflowBuilder />} />
         <Route path="/users" element={<Users />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/settings" element={<Settings />} />

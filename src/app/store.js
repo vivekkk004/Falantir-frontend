@@ -2,12 +2,14 @@ import { configureStore } from '@reduxjs/toolkit'
 import authReducer from './features/authSlice'
 import userReducer from './features/userSlice'
 import detectionReducer from './features/detectionSlice'
+import agentReducer from './features/agentSlice'
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     user: userReducer,
     detection: detectionReducer,
+    agents: agentReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

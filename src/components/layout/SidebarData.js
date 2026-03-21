@@ -6,6 +6,7 @@ import {
   Users,
   UserCircle,
   Settings,
+  Workflow,
 } from 'lucide-react'
 
 export const sidebarSections = [
@@ -13,7 +14,7 @@ export const sidebarSections = [
     title: 'Main',
     items: [
       { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-      { label: 'Live Monitor', path: '/monitor', icon: Camera },
+      { label: 'Live Feed', path: '/live-feed', icon: Camera },
       { label: 'Alerts', path: '/alerts', icon: AlertTriangle },
     ],
   },
@@ -21,6 +22,7 @@ export const sidebarSections = [
     title: 'Analytics',
     items: [
       { label: 'Analytics', path: '/analytics', icon: BarChart2 },
+      { label: 'Workflows', path: '/workflows', icon: Workflow },
     ],
   },
   {

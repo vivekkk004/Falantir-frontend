@@ -19,9 +19,3 @@ export const logoutUser = async () => {
     method: 'POST',
   })
 }
-
-export const refreshToken = async () => {
-  return await apiClient('/auth/refresh', {
-    method: 'POST',
-  })
-}

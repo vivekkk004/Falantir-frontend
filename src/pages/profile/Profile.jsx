@@ -113,7 +113,7 @@ const Profile = () => {
                   </div>
                 </div>
               ))}
-              <Button variant="outline" onClick={() => setEditing(true)} size="sm" className="mt-2">
+              <Button variant="secondary" onClick={() => setEditing(true)} size="sm" className="mt-2">
                 <Edit2 className="w-4 h-4" /> Edit Profile
               </Button>
             </div>

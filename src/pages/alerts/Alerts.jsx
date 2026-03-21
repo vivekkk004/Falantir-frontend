@@ -1,190 +1,183 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, Clock, Camera, Filter, RefreshCw, Download, Save } from 'lucide-react'
-import { getAlerts, getAlertsFromDB, saveAlerts } from '../../services/detectionService'
+import { AlertTriangle, CheckCircle, ThumbsUp, ThumbsDown, Bell, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getIncidents, acknowledgeIncident, submitFeedback, triggerManualAlert } from '../../services/detectionService'
+import { THREAT_COLORS } from '../../utils/constants'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import Loader from '../../components/ui/Loader'
 import toast from 'react-hot-toast'
 
-const statusColor = {
-  Shoplifting: 'bg-red-100 text-red-600',
-  'Not Shoplifting': 'bg-green-50 text-green-600',
-}
-
 const Alerts = () => {
-  const [liveAlerts, setLiveAlerts] = useState([])
-  const [dbAlerts, setDbAlerts] = useState([])
-  const [filter, setFilter] = useState('All')
-  const [view, setView] = useState('live') // 'live' | 'db'
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [selectedAlert, setSelectedAlert] = useState(null)
+  const [incidents, setIncidents] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const perPage = 15
 
-  const loadAlerts = useCallback(async () => {
+  const loadIncidents = useCallback(async () => {
     setLoading(true)
     try {
-      const [live, db] = await Promise.all([getAlerts({ limit: 50 }), getAlertsFromDB({ limit: 100 })])
-      setLiveAlerts(live)
-      setDbAlerts(db)
-    } catch (e) {
-      // not started
+      const data = await getIncidents({ page, per_page: perPage })
+      setIncidents(data.incidents || [])
+      setTotal(data.total || 0)
+    } catch (err) {
+      console.error('Failed to load incidents:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [page])
 
-  useEffect(() => {
-    loadAlerts()
-    const timer = setInterval(() => view === 'live' && loadAlerts(), 4000)
-    return () => clearInterval(timer)
-  }, [loadAlerts, view])
+  useEffect(() => { loadIncidents() }, [loadIncidents])
 
-  const handleSave = async () => {
-    setSaving(true)
+  const handleAcknowledge = async (id) => {
     try {
-      const result = await saveAlerts()
-      toast.success(`${result.saved} alerts saved to database!`)
-      await loadAlerts()
-    } catch (e) {
-      toast.error(e.message || 'Save failed')
-    } finally {
-      setSaving(false)
+      await acknowledgeIncident(id)
+      setIncidents(prev => prev.map(inc => inc._id === id ? { ...inc, acknowledged: true } : inc))
+      toast.success('Incident acknowledged')
+    } catch (err) {
+      toast.error(err.message)
     }
   }
 
-  const alerts = view === 'live' ? liveAlerts : dbAlerts
-  const filtered = filter === 'All' ? alerts : alerts.filter((a) => a.status === filter)
+  const handleFeedback = async (incidentId, verdict) => {
+    try {
+      await submitFeedback({ incident_id: incidentId, verdict })
+      toast.success(`Marked as ${verdict}`)
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const handleManualAlert = async () => {
+    try {
+      await triggerManualAlert('Manual security alert triggered from Falantir dashboard.')
+      toast.success('Manual alert sent')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="p-6 space-y-6">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center flex-wrap gap-3">
+    <div className="p-4 md:p-6 space-y-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Alerts</h1>
-          <p className="text-slate-500 text-sm mt-1">Real-time detection events</p>
+          <h1 className="text-2xl font-bold text-slate-800">Alert History</h1>
+          <p className="text-sm text-slate-400 mt-1">{total} total incidents</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={loadAlerts} isLoading={loading}>
-            <RefreshCw className="w-4 h-4" /> Refresh
-          </Button>
-          <Button size="sm" onClick={handleSave} isLoading={saving}>
-            <Save className="w-4 h-4" /> Save to DB
-          </Button>
-        </div>
+        <Button size="sm" variant="danger" onClick={handleManualAlert}>
+          <Bell className="w-4 h-4 mr-2" /> Manual Alert
+        </Button>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-        <Card>
-          {/* Tab + Filters */}
-          <div className="flex flex-wrap items-center gap-3 mb-5">
-            {/* View tabs */}
-            <div className="flex border border-slate-200 rounded-xl overflow-hidden text-xs font-medium">
-              <button onClick={() => setView('live')} className={`px-3 py-1.5 transition-colors ${view === 'live' ? 'bg-primary-500 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
-                Live ({liveAlerts.length})
-              </button>
-              <button onClick={() => setView('db')} className={`px-3 py-1.5 transition-colors ${view === 'db' ? 'bg-primary-500 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
-                Saved DB ({dbAlerts.length})
-              </button>
-            </div>
+      {/* Incident List */}
+      <div className="space-y-3">
+        {loading ? (
+          <Card className="text-center py-16">
+            <p className="text-slate-300 text-sm animate-pulse">Loading incidents...</p>
+          </Card>
+        ) : incidents.length === 0 ? (
+          <Card className="text-center py-16">
+            <CheckCircle className="w-10 h-10 mx-auto text-green-200 mb-3" />
+            <p className="text-slate-400 font-medium">No incidents recorded</p>
+          </Card>
+        ) : (
+          incidents.map((inc, i) => {
+            const colors = THREAT_COLORS[inc.threat_label] || THREAT_COLORS.safe
+            return (
+              <motion.div key={inc._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}>
+                <Card className={`p-4 border-l-4 ${colors.border}`}>
+                  <div className="flex flex-col md:flex-row md:items-center gap-4">
+                    {/* Snapshot */}
+                    {inc.snapshot && (
+                      <div className="w-full md:w-32 h-20 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                        <img src={`data:image/jpeg;base64,${inc.snapshot}`} alt="snapshot" className="w-full h-full object-cover" />
+                      </div>
+                    )}
 
-            {/* Status filter */}
-            <div className="flex gap-1.5 items-center ml-2">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
-              {['All', 'Shoplifting', 'Not Shoplifting'].map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${filter === f ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-            <span className="ml-auto text-xs text-slate-400">{filtered.length} events</span>
-          </div>
-
-          {/* Alerts list */}
-          {loading && filtered.length === 0 ? (
-            <div className="flex justify-center py-12"><Loader /></div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-slate-400">
-              <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No {filter !== 'All' ? filter : ''} alerts {view === 'live' ? '— start detection first' : 'in database'}</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map((alert, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.03 }}
-                  onClick={() => setSelectedAlert(alert)}
-                  className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${alert.status === 'Shoplifting' ? 'bg-red-50' : 'bg-green-50'}`}>
-                    <AlertTriangle className={`w-5 h-5 ${alert.status === 'Shoplifting' ? 'text-red-500' : 'text-green-500'}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-800">{alert.status} Detected</p>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColor[alert.status] || 'bg-slate-100 text-slate-500'}`}>
-                        {alert.confidence}%
-                      </span>
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
+                          {inc.threat_label}
+                        </span>
+                        <span className="text-xs text-slate-400 font-mono">
+                          {(inc.confidence * 100).toFixed(1)}%
+                        </span>
+                        {inc.acknowledged && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-600">ACK</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-600 line-clamp-2">{inc.gemini_description || '—'}</p>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-[10px] text-slate-400">Agent: {inc.agent_id || '—'}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {inc.timestamp ? new Date(inc.timestamp).toLocaleString() : '—'}
+                        </span>
+                      </div>
+                      {inc.yolo_objects?.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {inc.yolo_objects.slice(0, 4).map((obj, j) => (
+                            <span key={j} className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                              {obj.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-slate-500 flex items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1"><Camera className="w-3 h-3" />{alert.camera_label || alert.camera_id}</span>
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(alert.timestamp).toLocaleString()}</span>
-                    </p>
-                  </div>
-                  {alert.snapshot && (
-                    <img
-                      src={`data:image/jpeg;base64,${alert.snapshot}`}
-                      alt="snapshot"
-                      className="w-14 h-10 object-cover rounded-lg border border-slate-200 flex-shrink-0"
-                    />
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </motion.div>
 
-      {/* Alert detail modal */}
-      {selectedAlert && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedAlert(null)}>
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+                    {/* Actions */}
+                    <div className="flex flex-row md:flex-col gap-2 flex-shrink-0">
+                      {!inc.acknowledged && (
+                        <button
+                          onClick={() => handleAcknowledge(inc._id)}
+                          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleFeedback(inc._id, 'correct')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors flex items-center gap-1"
+                      >
+                        <ThumbsUp className="w-3 h-3" /> Correct
+                      </button>
+                      <button
+                        onClick={() => handleFeedback(inc._id, 'false_positive')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center gap-1"
+                      >
+                        <ThumbsDown className="w-3 h-3" /> False +
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-30"
           >
-            <h3 className="font-bold text-slate-800 text-lg mb-3">Alert Detail</h3>
-            {selectedAlert.snapshot && (
-              <img
-                src={`data:image/jpeg;base64,${selectedAlert.snapshot}`}
-                alt="snapshot"
-                className="w-full rounded-xl mb-4 border border-slate-100"
-              />
-            )}
-            <div className="space-y-2 text-sm">
-              {[
-                ['Status', selectedAlert.status],
-                ['Confidence', `${selectedAlert.confidence}%`],
-                ['Camera', selectedAlert.camera_label],
-                ['Time', new Date(selectedAlert.timestamp).toLocaleString()],
-              ].map(([k, v]) => (
-                <div key={k} className="flex justify-between">
-                  <span className="text-slate-400">{k}</span>
-                  <span className="font-medium text-slate-700">{v}</span>
-                </div>
-              ))}
-            </div>
-            <button onClick={() => setSelectedAlert(null)} className="mt-4 w-full py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-sm text-slate-600 transition-colors">
-              Close
-            </button>
-          </motion.div>
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="text-sm text-slate-500">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 disabled:opacity-30"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

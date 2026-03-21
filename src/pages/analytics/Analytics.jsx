@@ -1,98 +1,178 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { BarChart2, TrendingUp, TrendingDown, Calendar } from 'lucide-react'
+import { BarChart2, PieChart as PieIcon, Table2 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { getStats, getDailyAnalytics } from '../../services/detectionService'
 import Card from '../../components/ui/Card'
 
-const weekData = [65, 42, 88, 34, 71, 56, 90]
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const max = Math.max(...weekData)
+const COLORS = ['#22c55e', '#f59e0b', '#ef4444']
 
 const Analytics = () => {
+  const [stats, setStats] = useState(null)
+  const [daily, setDaily] = useState([])
+  const [range, setRange] = useState(30)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      try {
+        const [s, d] = await Promise.all([getStats(), getDailyAnalytics(range)])
+        setStats(s)
+        setDaily(d || [])
+      } catch (err) {
+        console.error('Analytics load error:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [range])
+
+  // Transform daily data for bar chart
+  const barData = daily.map(d => ({
+    date: d.date,
+    safe: d.counts?.safe || 0,
+    suspicious: d.counts?.suspicious || 0,
+    critical: d.counts?.critical || 0,
+    total: d.counts?.total || 0,
+  }))
+
+  // Pie data from stats
+  const pieData = stats ? [
+    { name: 'Safe', value: stats.safe_count || 0 },
+    { name: 'Suspicious', value: stats.suspicious_count || 0 },
+    { name: 'Critical', value: stats.critical_count || 0 },
+  ] : []
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-slate-800">Analytics</h1>
-        <p className="text-slate-500 text-sm mt-1">Detection trends and statistics</p>
+        <p className="text-sm text-slate-400 mt-1">Incident trends, threat distribution, and agent performance</p>
       </motion.div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'This Week', value: 24, prev: 18, icon: BarChart2, color: 'text-primary-600 bg-primary-50' },
-          { label: 'This Month', value: 91, prev: 74, icon: TrendingUp, color: 'text-green-600 bg-green-50' },
-          { label: 'False Positives', value: '8%', prev: '12%', icon: TrendingDown, color: 'text-amber-600 bg-amber-50' },
-        ].map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
-            <Card className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}>
-                <stat.icon className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                <p className="text-xs text-slate-500">{stat.label}</p>
-                <p className="text-xs text-slate-400">Prev: {stat.prev}</p>
-              </div>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+      {/* Summary Cards */}
+      {stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Total Incidents', val: stats.total_incidents, color: 'text-blue-600 bg-blue-50' },
+            { label: 'Critical', val: stats.critical_count, color: 'text-red-600 bg-red-50' },
+            { label: 'Suspicious', val: stats.suspicious_count, color: 'text-amber-600 bg-amber-50' },
+            { label: 'Safe', val: stats.safe_count, color: 'text-green-600 bg-green-50' },
+          ].map((s, i) => (
+            <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card className="text-center">
+                <p className="text-2xl font-bold text-slate-800">{s.val}</p>
+                <p className={`text-[10px] uppercase font-black mt-1 ${s.color.split(' ')[0]}`}>{s.label}</p>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
-      {/* Bar Chart */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+      {/* Bar Chart — Daily Incidents */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <Card>
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary-500" /> Weekly Detections
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-bold text-slate-800 flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-primary-500" /> Incidents Over Time
             </h2>
-            <span className="flex items-center gap-1 text-xs text-slate-400">
-              <Calendar className="w-3 h-3" /> This week
-            </span>
+            <div className="flex gap-1">
+              {[{ label: '7D', val: 7 }, { label: '30D', val: 30 }, { label: '90D', val: 90 }].map(r => (
+                <button
+                  key={r.val}
+                  onClick={() => setRange(r.val)}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    range === r.val ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-end gap-3 h-40">
-            {weekData.map((val, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                <span className="text-xs font-bold text-slate-600">{val}</span>
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${(val / max) * 120}px` }}
-                  transition={{ delay: 0.3 + i * 0.07, duration: 0.5 }}
-                  className={`w-full rounded-t-lg ${i === weekData.length - 1 ? 'bg-primary-500' : 'bg-primary-200'}`}
-                />
-                <span className="text-xs text-slate-400">{days[i]}</span>
-              </div>
-            ))}
-          </div>
+
+          {barData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }} />
+                <Bar dataKey="safe" fill="#22c55e" stackId="a" radius={[0, 0, 0, 0]} />
+                <Bar dataKey="suspicious" fill="#f59e0b" stackId="a" />
+                <Bar dataKey="critical" fill="#ef4444" stackId="a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-slate-300 text-sm">No data yet</div>
+          )}
         </Card>
       </motion.div>
 
-      {/* Top Locations */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-        <Card>
-          <h2 className="font-semibold text-slate-800 mb-4">Top Detection Locations</h2>
-          <div className="space-y-3">
-            {[
-              { name: 'Aisle 3', count: 34, pct: 37 },
-              { name: 'Electronics Section', count: 28, pct: 31 },
-              { name: 'Main Entrance', count: 19, pct: 21 },
-              { name: 'Checkout Area', count: 10, pct: 11 },
-            ].map((loc) => (
-              <div key={loc.name}>
-                <div className="flex justify-between text-xs text-slate-600 mb-1.5">
-                  <span>{loc.name}</span>
-                  <span className="font-semibold">{loc.count} events ({loc.pct}%)</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${loc.pct}%` }}
-                    transition={{ delay: 0.5, duration: 0.7 }}
-                    className="h-full rounded-full bg-primary-400"
-                  />
-                </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Donut Chart — Threat Distribution */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <Card>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
+              <PieIcon className="w-4 h-4 text-primary-500" /> Threat Distribution
+            </h2>
+            {pieData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4} dataKey="value">
+                    {pieData.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-slate-300 text-sm">No data yet</div>
+            )}
+          </Card>
+        </motion.div>
+
+        {/* Agent Performance Table */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <Card>
+            <h2 className="font-bold text-slate-800 flex items-center gap-2 mb-6">
+              <Table2 className="w-4 h-4 text-primary-500" /> Agent Performance
+            </h2>
+            {stats?.agent_stats?.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-[10px] uppercase text-slate-400 font-bold">
+                      <th className="pb-3">Agent</th>
+                      <th className="pb-3">Incidents</th>
+                      <th className="pb-3">Avg Conf</th>
+                      <th className="pb-3">Last Active</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {stats.agent_stats.map((a) => (
+                      <tr key={a.agent_id} className="text-slate-700">
+                        <td className="py-2.5 font-medium">{a.agent_id}</td>
+                        <td className="py-2.5">{a.total}</td>
+                        <td className="py-2.5">{(a.avg_confidence * 100).toFixed(0)}%</td>
+                        <td className="py-2.5 text-xs text-slate-400">
+                          {a.last_active ? new Date(a.last_active).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))}
-          </div>
-        </Card>
-      </motion.div>
+            ) : (
+              <div className="h-[200px] flex items-center justify-center text-slate-300 text-sm">No data yet</div>
+            )}
+          </Card>
+        </motion.div>
+      </div>
     </div>
   )
 }

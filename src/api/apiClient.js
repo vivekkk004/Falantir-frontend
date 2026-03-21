@@ -1,21 +1,21 @@
 import { getToken, removeToken } from '../utils/localStorage'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
 
-const apiClient = async (endpoint, { method = 'GET', body = null, headers = {} } = {}) => {
+const apiClient = async (endpoint, { method = 'GET', body = null, headers = {}, isFormData = false } = {}) => {
   const token = getToken()
 
   const config = {
     method,
     headers: {
-      'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(!isFormData && { 'Content-Type': 'application/json' }),
       ...headers,
     },
   }
 
   if (body) {
-    config.body = JSON.stringify(body)
+    config.body = isFormData ? body : JSON.stringify(body)
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config)
@@ -35,9 +35,14 @@ const apiClient = async (endpoint, { method = 'GET', body = null, headers = {} }
   }
 
   if (!response.ok) {
-    // FastAPI returns errors as { detail: "..." }
-    const message = data?.detail || data?.message || 'Something went wrong'
+    // v2 returns { success, data, error } — v1 returns { detail }
+    const message = data?.error || data?.detail || data?.message || 'Something went wrong'
     throw { status: response.status, message }
+  }
+
+  // v2 API wraps response in { success, data, error }
+  if (data?.success !== undefined) {
+    return data.data
   }
 
   return data
