@@ -212,14 +212,43 @@ const Settings = () => {
             {[
               { label: 'API Server', value: 'http://localhost:8000' },
               { label: 'Database', value: 'MongoDB — falantir' },
-              { label: 'YOLO', value: models?.yolo?.loaded ? `${models.yolo.version} (${models.yolo.model_file})` : 'Not loaded' },
-              { label: 'Gemini', value: models?.gemini?.initialized ? `${models.gemini.model} (active)` : 'Not configured' },
-              { label: 'Threat Model', value: models?.threat_classifier?.loaded ? `${models.threat_classifier.model_file} on ${models.threat_classifier.device}` : 'Not loaded' },
-              { label: 'Version', value: 'Falantir v2.0.0' },
+              {
+                label: 'Active Vision Provider',
+                value: models?.active_provider
+                  ? models.active_provider.toUpperCase()
+                  : 'Unknown',
+              },
+              {
+                label: 'Fallback Chain',
+                value: Array.isArray(models?.fallback_chain)
+                  ? models.fallback_chain.join(' → ')
+                  : 'gemini → mobilenetv3 → safe',
+              },
+              {
+                label: 'Gemini',
+                value: models?.gemini?.initialized
+                  ? `${models.gemini.model} ✓ ready`
+                  : models?.gemini?.configured
+                    ? `${models.gemini.model} (configured, not warm)`
+                    : 'Not configured',
+              },
+              {
+                label: 'Local Student Model',
+                value: models?.mobilenetv3?.loaded
+                  ? `MobileNetV3 on ${models.mobilenetv3.device}`
+                  : 'Not trained yet (fallback skipped)',
+              },
+              {
+                label: 'Motion Gate',
+                value: models?.motion_detection?.enabled
+                  ? `threshold ${models.motion_detection.threshold} · cooldown ${models.motion_detection.cooldown_frames}f`
+                  : 'Disabled',
+              },
+              { label: 'Version', value: 'Falantir v2.1.0' },
             ].map((item) => (
-              <div key={item.label} className="flex justify-between py-2 border-b border-slate-50 last:border-0">
-                <span className="text-slate-400">{item.label}</span>
-                <span className="font-medium text-slate-700 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded">{item.value}</span>
+              <div key={item.label} className="flex justify-between py-2 border-b border-slate-50 last:border-0 gap-3">
+                <span className="text-slate-400 flex-shrink-0">{item.label}</span>
+                <span className="font-medium text-slate-700 font-mono text-xs bg-slate-50 px-2 py-0.5 rounded text-right truncate">{item.value}</span>
               </div>
             ))}
           </div>

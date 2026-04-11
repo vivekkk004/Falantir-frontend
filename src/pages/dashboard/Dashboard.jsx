@@ -52,8 +52,9 @@ const Dashboard = () => {
           agent_location: agent?.location || '',
           threat_label: data.threat_label,
           confidence: data.confidence,
-          description: data.gemini_description,
-          yolo_objects: data.yolo_objects || [],
+          description: data.scene_description || data.gemini_description,
+          reasoning: data.reasoning || '',
+          detected_objects: data.detected_objects || data.yolo_objects || [],
           timestamp: data.timestamp || new Date().toISOString(),
         })
       }
@@ -322,17 +323,24 @@ const ThreatFeedItem = ({ item }) => {
         )}
       </div>
 
-      {/* Gemini description */}
+      {/* Scene description (Gemini) */}
       {item.description && item.description !== 'Skipped (frame skip)' && (
         <p className="text-[11px] text-slate-500 leading-relaxed line-clamp-2 mb-1.5">
           {item.description}
         </p>
       )}
 
-      {/* YOLO objects */}
-      {item.yolo_objects?.length > 0 && (
+      {/* Reasoning — why Gemini flagged this */}
+      {item.reasoning && (
+        <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-1.5 py-1 leading-snug line-clamp-2 mb-1.5">
+          <span className="font-bold">Why: </span>{item.reasoning}
+        </p>
+      )}
+
+      {/* Detected objects */}
+      {item.detected_objects?.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {item.yolo_objects.slice(0, 3).map((obj, i) => (
+          {item.detected_objects.slice(0, 3).map((obj, i) => (
             <span key={i} className="text-[9px] bg-white text-slate-500 px-1.5 py-0.5 rounded font-semibold border border-surface-200/60">
               {obj.label}
             </span>
@@ -393,21 +401,27 @@ const AgentCard = ({ agent, liveData, index }) => {
             <MapPin className="w-3 h-3" /> {agent.location || 'No location'}
           </p>
 
-          {liveData?.gemini_description && liveData.gemini_description !== 'Skipped (frame skip)' && (
+          {(liveData?.scene_description || liveData?.gemini_description) && (liveData?.scene_description || liveData?.gemini_description) !== 'Skipped (frame skip)' && (
             <p className="text-[11px] text-slate-500 bg-surface-50 rounded-lg p-2 leading-relaxed line-clamp-2 border border-surface-200/40 mt-2">
-              {liveData.gemini_description}
+              {liveData.scene_description || liveData.gemini_description}
             </p>
           )}
 
-          {liveData?.yolo_objects?.length > 0 && (
+          {liveData?.reasoning && (
+            <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200/60 rounded-md px-1.5 py-1 leading-snug line-clamp-2 mt-1.5">
+              <span className="font-bold">Why: </span>{liveData.reasoning}
+            </p>
+          )}
+
+          {(liveData?.detected_objects?.length > 0 || liveData?.yolo_objects?.length > 0) && (
             <div className="flex flex-wrap gap-1 mt-1.5">
-              {liveData.yolo_objects.slice(0, 4).map((obj, i) => (
+              {(liveData.detected_objects || liveData.yolo_objects).slice(0, 4).map((obj, i) => (
                 <span key={i} className="text-[9px] bg-surface-100 text-slate-500 px-1.5 py-0.5 rounded-md font-semibold">
                   {obj.label}
                 </span>
               ))}
-              {liveData.yolo_objects.length > 4 && (
-                <span className="text-[9px] text-slate-400 px-1 py-0.5 font-medium">+{liveData.yolo_objects.length - 4}</span>
+              {(liveData.detected_objects || liveData.yolo_objects).length > 4 && (
+                <span className="text-[9px] text-slate-400 px-1 py-0.5 font-medium">+{(liveData.detected_objects || liveData.yolo_objects).length - 4}</span>
               )}
             </div>
           )}

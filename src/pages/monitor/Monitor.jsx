@@ -101,14 +101,24 @@ const Monitor = () => {
                 </div>
                 <span className={`text-sm font-bold ${colors.text}`}>{(result.confidence * 100).toFixed(1)}%</span>
               </div>
-              <p className="text-sm text-slate-700 italic">{result.gemini_description}</p>
+              <p className="text-sm text-slate-700 italic">{result.scene_description || result.gemini_description}</p>
+              {result.reasoning && (
+                <p className="mt-2 text-xs text-slate-700 bg-white/60 border border-slate-200/60 rounded-md px-2 py-1.5 leading-snug">
+                  <span className="font-bold text-slate-800">Why flagged: </span>{result.reasoning}
+                </p>
+              )}
+              {result.provider_used && (
+                <p className="mt-1.5 text-[10px] text-slate-500 font-mono">
+                  Analyzed by {result.provider_used} ({result.model || 'unknown'})
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
                 { val: result.frames_analyzed, label: 'Frames' },
                 { val: `${result.inference_time_ms}ms`, label: 'Peak Inference' },
-                { val: result.yolo_objects?.length || 0, label: 'Objects' },
+                { val: (result.detected_objects || result.yolo_objects)?.length || 0, label: 'Objects' },
                 { val: `${result.probabilities?.critical ? (result.probabilities.critical * 100).toFixed(0) : 0}%`, label: 'Risk Score' },
               ].map((s) => (
                 <div key={s.label} className="bg-slate-50 rounded-lg p-3 text-center">
@@ -118,13 +128,18 @@ const Monitor = () => {
               ))}
             </div>
 
-            {result.yolo_objects?.length > 0 && (
+            {(result.detected_objects || result.yolo_objects)?.length > 0 && (
               <div>
                 <p className="text-xs font-bold text-slate-500 mb-2">Detected Objects</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {result.yolo_objects.map((obj, i) => (
-                    <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium">
+                  {(result.detected_objects || result.yolo_objects).map((obj, i) => (
+                    <span
+                      key={i}
+                      title={obj.action || ''}
+                      className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-lg font-medium"
+                    >
                       {obj.label} ({(obj.confidence * 100).toFixed(0)}%)
+                      {obj.action && <span className="ml-1 text-amber-600">• {obj.action}</span>}
                     </span>
                   ))}
                 </div>

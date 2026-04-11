@@ -109,16 +109,24 @@ const Alerts = () => {
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-600">ACK</span>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 line-clamp-2">{inc.gemini_description || '—'}</p>
+                      <p className="text-sm text-slate-600 line-clamp-2">{inc.scene_description || inc.gemini_description || '—'}</p>
+                      {inc.reasoning && (
+                        <p className="mt-1 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/60 rounded px-1.5 py-1 leading-snug line-clamp-2">
+                          <span className="font-bold">Why: </span>{inc.reasoning}
+                        </p>
+                      )}
                       <div className="flex items-center gap-3 mt-1.5">
                         <span className="text-[10px] text-slate-400">Agent: {inc.agent_id || '—'}</span>
                         <span className="text-[10px] text-slate-400">
                           {inc.timestamp ? new Date(inc.timestamp).toLocaleString() : '—'}
                         </span>
+                        {inc.provider_used && (
+                          <span className="text-[10px] text-slate-400 font-mono">· {inc.provider_used}</span>
+                        )}
                       </div>
-                      {inc.yolo_objects?.length > 0 && (
+                      {(inc.detected_objects || inc.yolo_objects)?.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
-                          {inc.yolo_objects.slice(0, 4).map((obj, j) => (
+                          {(inc.detected_objects || inc.yolo_objects).slice(0, 4).map((obj, j) => (
                             <span key={j} className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
                               {obj.label}
                             </span>
