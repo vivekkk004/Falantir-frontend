@@ -6,12 +6,14 @@ import { useSelector } from 'react-redux'
 import { getAgentStreamUrl } from '../../services/agentService'
 import { THREAT_COLORS } from '../../utils/constants'
 import Card from '../../components/ui/Card'
+import VideoAnalysisViewer from '../../components/monitor/VideoAnalysisViewer'
 
 const Monitor = () => {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
+  const [videoFile, setVideoFile] = useState(null)
   const { list: agents } = useSelector((state) => state.agents)
   const liveData = useSelector((state) => state.agents.liveData)
 
@@ -20,6 +22,7 @@ const Monitor = () => {
     setUploading(true)
     setResult(null)
     setError(null)
+    setVideoFile(file)
 
     try {
       const data = await uploadVideo(file)
@@ -86,6 +89,8 @@ const Monitor = () => {
             <X className="w-4 h-4" /> {error}
           </div>
         )}
+
+        <VideoAnalysisViewer videoFile={videoFile} uploading={uploading} result={result} />
 
         {result && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 space-y-4">
