@@ -71,8 +71,8 @@ const Monitor = () => {
           {uploading ? (
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
-              <p className="text-sm text-slate-500 font-medium">Running 3 AI models in parallel...</p>
-              <p className="text-xs text-slate-400">YOLO + Gemini + Threat Classifier</p>
+              <p className="text-sm text-slate-500 font-medium">Analyzing with AI vision...</p>
+              <p className="text-xs text-slate-400">Gemini 2.5 Flash + MobileNetV3 fallback</p>
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3">

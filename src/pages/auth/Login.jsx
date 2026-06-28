@@ -57,8 +57,8 @@ const Login = () => {
 
           <div className="space-y-4">
             {[
-              { icon: Radar, text: '3 AI models running in parallel' },
-              { icon: ShieldCheck, text: 'YOLOv8 + Gemini + Custom Classifier' },
+              { icon: Radar, text: 'Motion-gated real-time analysis' },
+              { icon: ShieldCheck, text: 'Gemini 2.5 Flash + MobileNetV3 fallback' },
               { icon: Eye, text: 'Live multi-camera monitoring' },
             ].map((item, i) => (
               <motion.div

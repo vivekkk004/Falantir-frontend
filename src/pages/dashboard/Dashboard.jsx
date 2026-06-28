@@ -136,7 +136,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {[
               { title: 'Add Camera Agent', desc: 'Connect a webcam or RTSP stream', icon: Plus, path: '/settings', color: 'text-primary-500' },
-              { title: 'Upload Video', desc: 'Analyze a video file with 3 AI models', icon: Zap, path: '/live-feed', color: 'text-amber-500' },
+              { title: 'Upload Video', desc: 'Analyze a video file with Gemini AI', icon: Zap, path: '/live-feed', color: 'text-amber-500' },
               { title: 'View Analytics', desc: 'Check incident trends and stats', icon: BarChart3, path: '/analytics', color: 'text-emerald-500' },
             ].map((action) => (
               <button
@@ -254,9 +254,9 @@ const Dashboard = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: 'WebSocket', value: connected ? 'Connected' : 'Disconnected', ok: connected },
-                  { label: 'YOLO v8', value: 'Active', ok: true },
-                  { label: 'Gemini AI', value: 'Active', ok: true },
-                  { label: 'Threat Model', value: 'Disabled', ok: false },
+                  { label: 'Gemini Vision', value: 'Active', ok: true },
+                  { label: 'Motion Gate', value: 'Active', ok: true },
+                  { label: 'MobileNetV3', value: 'Fallback', ok: true },
                 ].map((item) => (
                   <div key={item.label} className="bg-surface-50 rounded-xl p-3.5 text-center">
                     <div className={`w-2 h-2 rounded-full mx-auto mb-2 ${item.ok ? 'bg-emerald-500' : 'bg-slate-300'}`} />
