@@ -23,12 +23,18 @@ export function useSocket() {
     const s = socket.current
     if (!s.connected) s.connect()
 
-    s.on('connect', () => setConnected(true))
-    s.on('disconnect', () => setConnected(false))
+    const onConnect = () => setConnected(true)
+    const onDisconnect = () => setConnected(false)
+    s.on('connect', onConnect)
+    s.on('disconnect', onDisconnect)
+    setConnected(s.connected)
 
+    // Remove only OUR handlers — the socket is a shared singleton with
+    // multiple consumers (Navbar, Dashboard, AlertsListener), so an
+    // argument-less off() would tear down their listeners too.
     return () => {
-      s.off('connect')
-      s.off('disconnect')
+      s.off('connect', onConnect)
+      s.off('disconnect', onDisconnect)
     }
   }, [])
 

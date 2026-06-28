@@ -1,9 +1,10 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, Link } from 'react-router-dom'
-import { Bell, Search, UserCircle, LogOut, ShieldCheck } from 'lucide-react'
+import { Search, UserCircle, LogOut, ShieldCheck } from 'lucide-react'
 import { logoutUser } from '../../app/features/authSlice'
 import { useState } from 'react'
 import { useSocket } from '../../hooks/useSocket'
+import NotificationCenter from './NotificationCenter'
 
 const Navbar = () => {
   const dispatch = useDispatch()
@@ -49,10 +50,7 @@ const Navbar = () => {
         </div>
 
         {/* Notifications */}
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-100 text-slate-400 hover:text-slate-600 transition-colors">
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-accent-danger rounded-full ring-2 ring-white" />
-        </button>
+        <NotificationCenter />
 
         {/* Divider */}
         <div className="w-px h-6 bg-surface-200 mx-1" />

@@ -3,10 +3,10 @@ import { motion } from 'framer-motion'
 import { Upload, FileVideo, AlertTriangle, CheckCircle, Loader2, X } from 'lucide-react'
 import { uploadVideo } from '../../services/detectionService'
 import { useSelector } from 'react-redux'
-import { getAgentStreamUrl } from '../../services/agentService'
 import { THREAT_COLORS } from '../../utils/constants'
 import Card from '../../components/ui/Card'
 import VideoAnalysisViewer from '../../components/monitor/VideoAnalysisViewer'
+import LiveFeed from '../../components/monitor/LiveFeed'
 
 const Monitor = () => {
   const [dragOver, setDragOver] = useState(false)
@@ -164,7 +164,7 @@ const Monitor = () => {
               return (
                 <Card key={agent.id} className="overflow-hidden p-0">
                   <div className="aspect-video bg-black">
-                    <img src={`${getAgentStreamUrl(agent.id)}?t=${Date.now()}`} alt={agent.name} className="w-full h-full object-contain" />
+                    <LiveFeed agentId={agent.id} agentName={agent.name} />
                   </div>
                   <div className="p-3 flex items-center justify-between">
                     <div>

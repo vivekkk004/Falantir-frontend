@@ -3,6 +3,7 @@ import authReducer from './features/authSlice'
 import userReducer from './features/userSlice'
 import detectionReducer from './features/detectionSlice'
 import agentReducer from './features/agentSlice'
+import notificationsReducer from './features/notificationsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     user: userReducer,
     detection: detectionReducer,
     agents: agentReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

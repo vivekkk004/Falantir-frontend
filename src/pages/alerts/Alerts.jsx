@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { AlertTriangle, CheckCircle, ThumbsUp, ThumbsDown, Bell, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CheckCircle, ThumbsUp, ThumbsDown, Bell, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getIncidents, acknowledgeIncident, submitFeedback, triggerManualAlert } from '../../services/detectionService'
 import { THREAT_COLORS } from '../../utils/constants'
 import Card from '../../components/ui/Card'
@@ -13,6 +14,10 @@ const Alerts = () => {
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const perPage = 15
+
+  // Live alerts captured app-wide by <AlertsListener>.
+  const liveAlertCount = useSelector((state) => state.notifications.items.length)
+  const prevAlertCount = useRef(liveAlertCount)
 
   const loadIncidents = useCallback(async () => {
     setLoading(true)
@@ -28,6 +33,18 @@ const Alerts = () => {
   }, [page])
 
   useEffect(() => { loadIncidents() }, [loadIncidents])
+
+  // When a new alert arrives while viewing page 1, re-fetch so the freshly
+  // persisted incident (with snapshot) shows up live. Small delay lets the
+  // backend finish its background DB write first.
+  useEffect(() => {
+    if (liveAlertCount > prevAlertCount.current && page === 1) {
+      const t = setTimeout(loadIncidents, 1000)
+      prevAlertCount.current = liveAlertCount
+      return () => clearTimeout(t)
+    }
+    prevAlertCount.current = liveAlertCount
+  }, [liveAlertCount, page, loadIncidents])
 
   const handleAcknowledge = async (id) => {
     try {

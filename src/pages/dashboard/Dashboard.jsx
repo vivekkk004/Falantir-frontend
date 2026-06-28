@@ -8,10 +8,9 @@ import {
 } from 'lucide-react'
 import { fetchAgents, updateAgentLiveData } from '../../app/features/agentSlice'
 import { useSocket } from '../../hooks/useSocket'
-import { getAgentStreamUrl } from '../../services/agentService'
 import { THREAT_COLORS } from '../../utils/constants'
 import Button from '../../components/ui/Button'
-import toast from 'react-hot-toast'
+import LiveFeed from '../../components/monitor/LiveFeed'
 
 const anim = (delay = 0) => ({
   initial: { opacity: 0, y: 14 },
@@ -25,7 +24,7 @@ const Dashboard = () => {
   const { list: agents } = useSelector((state) => state.agents)
   const { user } = useSelector((state) => state.auth)
   const liveData = useSelector((state) => state.agents.liveData)
-  const { connected, joinAgent, leaveAgent, onAgentUpdate, onIncidentAlert } = useSocket()
+  const { connected, joinAgent, leaveAgent, onAgentUpdate } = useSocket()
 
   // Live threat feed — stores recent suspicious/critical detections
   const [threatFeed, setThreatFeed] = useState([])
@@ -60,12 +59,11 @@ const Dashboard = () => {
       }
     })
 
-    const unsubAlert = onIncidentAlert((data) => {
-      toast.error(`CRITICAL: ${data.description || 'Threat detected'}`, { duration: 6000 })
-    })
-
-    return () => { streaming.forEach(a => leaveAgent(a.id)); unsub(); unsubAlert() }
-  }, [agents, joinAgent, leaveAgent, onAgentUpdate, onIncidentAlert, dispatch, addToFeed])
+    // Note: durable `incident_alert` handling (toast + sound + notification
+    // store) lives in the app-wide <AlertsListener>, so it fires on every
+    // page. Here we only maintain the in-page live threat feed.
+    return () => { streaming.forEach(a => leaveAgent(a.id)); unsub() }
+  }, [agents, joinAgent, leaveAgent, onAgentUpdate, dispatch, addToFeed])
 
   const totalAgents = agents.length
   const activeAgents = agents.filter(a => a.status === 'streaming').length
@@ -368,7 +366,7 @@ const AgentCard = ({ agent, liveData, index }) => {
       <div className={`bg-white rounded-2xl border border-surface-200/60 overflow-hidden shadow-soft transition-all duration-300 ${ringClass}`}>
         <div className="aspect-video bg-[#0d0f1a] relative overflow-hidden">
           {isStreaming ? (
-            <img src={`${getAgentStreamUrl(agent.id)}?t=${Date.now()}`} alt={agent.name} className="w-full h-full object-contain" />
+            <LiveFeed agentId={agent.id} agentName={agent.name} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full">
               <Camera className="w-8 h-8 text-slate-700/30 mb-1.5" />

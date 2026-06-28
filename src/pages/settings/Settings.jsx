@@ -4,6 +4,7 @@ import { Settings as SettingsIcon, Bell, Shield, Monitor, Database, Plus, Trash2
 import { useDispatch, useSelector } from 'react-redux'
 import { fetchAgents, addAgent, removeAgent, startAgent, stopAgent } from '../../app/features/agentSlice'
 import { getModelsStatus } from '../../services/detectionService'
+import { getSoundEnabled, setSoundEnabled } from '../../utils/localStorage'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -24,7 +25,7 @@ const Settings = () => {
 
   const [settings, setSettings] = useState({
     emailAlerts: true,
-    soundAlerts: false,
+    soundAlerts: getSoundEnabled(), // persisted; drives the critical-alert alarm
     autoRecord: true,
     highConfOnly: true,
     showBoxes: true,
@@ -78,7 +79,11 @@ const Settings = () => {
     }
   }
 
-  const toggle = (key) => setSettings(prev => ({ ...prev, [key]: !prev[key] }))
+  const toggle = (key) => setSettings(prev => {
+    const next = { ...prev, [key]: !prev[key] }
+    if (key === 'soundAlerts') setSoundEnabled(next.soundAlerts)
+    return next
+  })
 
   const settingsSections = [
     {
